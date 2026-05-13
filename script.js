@@ -1,0 +1,176 @@
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const timerElement = document.getElementById('timer');
+
+const square = {
+    x: 50,
+    y: 50,
+    size: 30,
+    speed: 5,
+    color: '#00ff00'
+};
+
+const enemies = [];
+const enemySize = 20;
+const enemySpeed = 2;
+
+let keys = {};
+let gameOver = false;
+let timerInterval = null;
+let elapsedSeconds = 0;
+let gameRunning = false;
+
+function formatTime(seconds) {
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+}
+
+function updateTimerDisplay() {
+    timerElement.textContent = `Time: ${formatTime(elapsedSeconds)}`;
+}
+
+function resetTimer() {
+    stopTimer();
+    elapsedSeconds = 0;
+    updateTimerDisplay();
+}
+
+function startTimer() {
+    resetTimer();
+    timerInterval = setInterval(() => {
+        elapsedSeconds += 1;
+        updateTimerDisplay();
+    }, 1000);
+}
+
+function stopTimer() {
+    if (timerInterval !== null) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+    }
+}
+
+function stopGame() {
+    gameRunning = false;
+    stopTimer();
+}
+
+function generateEnemies() {
+    const numEnemies = Math.floor(Math.random() * 5) + 1; // 1 to 3 enemies
+    for (let i = 0; i < numEnemies; i++) {
+        enemies.push({
+            x: canvas.width,
+            y: Math.random() * (canvas.height - enemySize),
+            size: enemySize,
+            color: '#ff0000'
+        });
+    }
+}
+
+function isColliding(a, b) {
+    return a.x < b.x + b.size &&
+           a.x + a.size > b.x &&
+           a.y < b.y + b.size &&
+           a.y + a.size > b.y;
+}
+
+function update() {
+    if (gameOver || !gameRunning) {
+        return;
+    }
+    
+    if (keys.ArrowRight) {
+        square.x += square.speed;
+    }
+    if (keys.ArrowUp) {
+        square.y -= square.speed;
+    }
+    if (keys.ArrowDown) {
+        square.y += square.speed;
+    }
+
+    square.y = Math.max(0, Math.min(canvas.height - square.size, square.y));
+
+    enemies.forEach(enemy => {
+        enemy.x -= enemySpeed;
+    });
+
+    enemies.splice(0, enemies.length, ...enemies.filter(enemy => enemy.x > -enemy.size));
+
+    if (Math.random() < 0.01) {
+        generateEnemies();
+    }
+
+    for (const enemy of enemies) {
+        if (isColliding(square, enemy)) {
+            gameOver = true;
+            gameRunning = false;
+            stopTimer();
+            break;
+        }
+    }
+}
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = square.color;
+    ctx.fillRect(square.x, square.y, square.size, square.size);
+
+    enemies.forEach(enemy => {
+        ctx.fillStyle = enemy.color;
+        ctx.fillRect(enemy.x, enemy.y, enemy.size, enemy.size);
+    });
+
+    if (gameOver) {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '48px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('Game Over', canvas.width / 2, canvas.height / 2 - 24);
+        ctx.font = '24px Arial';
+        ctx.fillText('Press Enter to restart', canvas.width / 2, canvas.height / 2 + 32);
+    }
+}
+
+function gameLoop() {
+    update();
+    draw();
+    if (!gameOver && gameRunning) {
+        requestAnimationFrame(gameLoop);
+    }
+}
+
+window.addEventListener('keydown', (e) => {
+    if (['ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
+        keys[e.key] = true;
+        e.preventDefault();
+    }
+});
+
+window.addEventListener('keyup', (e) => {
+    if (['ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
+        keys[e.key] = false;
+        e.preventDefault();
+    }
+
+    if (e.key === 'Enter' && gameOver) {
+        startGame();
+    }
+});
+
+function startGame() {
+    gameOver = false;
+    gameRunning = true;
+    square.x = 50;
+    square.y = 50;
+    enemies.splice(0, enemies.length);
+    keys = {};
+    resetTimer();
+    startTimer();
+    gameLoop();
+}
+
+startGame();
