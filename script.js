@@ -2,7 +2,7 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const timerElement = document.getElementById('timer');
 
-const square = {
+const airplane = {
     x: 50,
     y: 50,
     size: 30,
@@ -57,7 +57,7 @@ function stopGame() {
 }
 
 function generateEnemies() {
-    const numEnemies = Math.floor(Math.random() * 5) + 1; // 1 to 3 enemies
+    const numEnemies = Math.floor(Math.random() * 5) + 1;
     for (let i = 0; i < numEnemies; i++) {
         enemies.push({
             x: canvas.width,
@@ -75,22 +75,21 @@ function isColliding(a, b) {
            a.y + a.size > b.y;
 }
 
+function checkCollisions() {
+    for (const enemy of enemies) {
+        if(isColliding(airplane, enemy)) {
+            gameOver = true;
+            gameRunning = false;
+            stopTimer();
+            break;
+        }
+    }
+}
+
 function update() {
     if (gameOver || !gameRunning) {
         return;
     }
-    
-    if (keys.ArrowRight) {
-        square.x += square.speed;
-    }
-    if (keys.ArrowUp) {
-        square.y -= square.speed;
-    }
-    if (keys.ArrowDown) {
-        square.y += square.speed;
-    }
-
-    square.y = Math.max(0, Math.min(canvas.height - square.size, square.y));
 
     enemies.forEach(enemy => {
         enemy.x -= enemySpeed;
@@ -102,21 +101,14 @@ function update() {
         generateEnemies();
     }
 
-    for (const enemy of enemies) {
-        if (isColliding(square, enemy)) {
-            gameOver = true;
-            gameRunning = false;
-            stopTimer();
-            break;
-        }
-    }
+    checkCollisions();         
 }
 
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    ctx.fillStyle = square.color;
-    ctx.fillRect(square.x, square.y, square.size, square.size);
+    ctx.fillStyle = airplane.color;
+    ctx.fillRect(airplane.x, airplane.y, airplane.size, airplane.size);
 
     enemies.forEach(enemy => {
         ctx.fillStyle = enemy.color;
@@ -147,7 +139,21 @@ window.addEventListener('keydown', (e) => {
     if (['ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
         keys[e.key] = true;
         e.preventDefault();
+
+        if (keys.ArrowRight) {
+            airplane.x += airplane.speed;
+        }
+
+        if (keys.ArrowUp) {
+            airplane.y -= airplane.speed;
+        }
+
+        if (keys.ArrowDown) {
+            airplane.y += airplane.speed;
+        } 
     }
+    
+    airplane.y = Math.max(0, Math.min(canvas.height - airplane.size, airplane.y));
 });
 
 window.addEventListener('keyup', (e) => {
@@ -164,8 +170,8 @@ window.addEventListener('keyup', (e) => {
 function startGame() {
     gameOver = false;
     gameRunning = true;
-    square.x = 50;
-    square.y = 50;
+    airplane.x = 50;
+    airplane.y = 50;
     enemies.splice(0, enemies.length);
     keys = {};
     resetTimer();
