@@ -77,7 +77,7 @@ function isColliding(a, b) {
 
 function checkCollisions() {
     for (const enemy of enemies) {
-        if(isColliding(airplane, enemy)) {
+        if (isColliding(airplane, enemy)) {
             gameOver = true;
             gameRunning = false;
             stopTimer();
